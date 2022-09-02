@@ -7,7 +7,7 @@ use axum::{
 
 use serde::{Deserialize, Serialize};
 
-use self::eth_api::{eth_accounts, eth_balance, eth_transaction};
+use self::eth_api::{eth_accounts, eth_balance, eth_raw_transaction, eth_transaction};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ResultInfo<T> {
@@ -26,5 +26,6 @@ pub fn eth_routes() -> Router {
 	Router::new()
 		.route("/accounts", get(eth_accounts))
 		.route("/balance/:id", get(eth_balance))
-		.route("/transaction", post(eth_transaction))
+		.route("/sendTransaction", post(eth_transaction))
+		.route("/sendRawTransaction", post(eth_raw_transaction))
 }

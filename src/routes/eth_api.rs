@@ -5,7 +5,9 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use web3::types::{H256, U256};
 
-use crate::ethereum::transaction::{account_balance, accounts, send_transaction, TxRequest};
+use crate::ethereum::transaction::{
+	account_balance, accounts, send_raw_transaction, send_transaction, TxRequest,
+};
 
 use super::ResultInfo;
 
@@ -38,6 +40,18 @@ pub(crate) async fn eth_transaction(Json(payload): Json<TxRequest>) -> Json<Valu
 		Ok(addr) => (StatusCode::OK, addr),
 		Err(err) => {
 			error!(target: "ethereum", "Send transaction error: {}", err);
+			(StatusCode::INTERNAL_SERVER_ERROR, H256::zero())
+		}
+	};
+
+	build_json_value(result)
+}
+
+pub(crate) async fn eth_raw_transaction(Json(payload): Json<TxRequest>) -> Json<Value> {
+	let result = match send_raw_transaction(payload).await {
+		Ok(addr) => (StatusCode::OK, addr),
+		Err(err) => {
+			error!(target: "ethereum", "Send raw transaction error: {}", err);
 			(StatusCode::INTERNAL_SERVER_ERROR, H256::zero())
 		}
 	};
