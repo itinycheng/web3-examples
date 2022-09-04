@@ -41,7 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 						))
 					}
 				}))
-				.timeout(Duration::from_secs(10))
+				.timeout(Duration::from_secs(60))
 				.into_inner(),
 		);
 

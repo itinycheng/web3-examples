@@ -4,11 +4,11 @@ use secp256k1::SecretKey;
 use serde::{Deserialize, Serialize};
 use web3::{
 	transports::Http,
-	types::{TransactionParameters, TransactionRequest, H160, H256, U256},
+	types::{TransactionParameters, TransactionRequest, H256, U256},
 	Web3,
 };
 
-pub(self) const WEB3_URL: &str = "http://localhost:8545";
+use super::WEB3_URL;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TxRequest {
@@ -18,24 +18,6 @@ pub struct TxRequest {
 	gas: Option<u64>,
 	nonce: Option<u128>,
 	secret_key: Option<String>,
-}
-
-#[inline]
-pub async fn account_balance(account_str: &str) -> Result<U256, web3::Error> {
-	let account =
-		H160::from_str(account_str).map_err(|_| web3::Error::Decoder(account_str.to_string()))?;
-	let http = Http::new(WEB3_URL)?;
-	let web3 = Web3::new(http);
-	let balance = web3.eth().balance(account, None).await?;
-	Ok(balance)
-}
-
-#[inline]
-pub async fn accounts() -> Result<Vec<H160>, web3::Error> {
-	let http = Http::new(WEB3_URL)?;
-	let web3 = Web3::new(http);
-	let accounts = web3.eth().accounts().await?;
-	Ok(accounts)
 }
 
 #[inline]

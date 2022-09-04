@@ -7,7 +7,10 @@ use axum::{
 
 use serde::{Deserialize, Serialize};
 
-use self::eth_api::{eth_accounts, eth_balance, eth_raw_transaction, eth_transaction};
+use self::eth_api::{
+	call_retrieve_of_value_storage_contract, call_store_of_value_storage_contract,
+	deploy_contract_value_storage, eth_accounts, eth_balance, eth_raw_transaction, eth_transaction,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ResultInfo<T> {
@@ -28,4 +31,7 @@ pub fn eth_routes() -> Router {
 		.route("/balance/:id", get(eth_balance))
 		.route("/sendTransaction", post(eth_transaction))
 		.route("/sendRawTransaction", post(eth_raw_transaction))
+		.route("/contract/storage/deploy/:account_id", get(deploy_contract_value_storage))
+		.route("/contract/storage/store", post(call_store_of_value_storage_contract))
+		.route("/contract/storage/retrieve", post(call_retrieve_of_value_storage_contract))
 }
