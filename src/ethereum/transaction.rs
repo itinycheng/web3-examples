@@ -2,13 +2,9 @@ use std::str::FromStr;
 
 use secp256k1::SecretKey;
 use serde::{Deserialize, Serialize};
-use web3::{
-	transports::Http,
-	types::{TransactionParameters, TransactionRequest, H256, U256},
-	Web3,
-};
+use web3::types::{TransactionParameters, TransactionRequest, H256, U256};
 
-use super::WEB3_URL;
+use super::WEB3;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TxRequest {
@@ -35,9 +31,7 @@ pub async fn send_transaction(tx_request: TxRequest) -> Result<H256, web3::Error
 		request = request.nonce(U256::from(tx_request.nonce.unwrap()));
 	}
 
-	let http = Http::new(WEB3_URL)?;
-	let web3 = Web3::new(http);
-	web3.eth().send_transaction(request.build()).await
+	WEB3.eth().send_transaction(request.build()).await
 }
 
 #[inline]
@@ -52,10 +46,7 @@ pub async fn send_raw_transaction(tx_request: TxRequest) -> Result<H256, web3::E
 		..TransactionParameters::default()
 	};
 
-	let http = Http::new(WEB3_URL)?;
-	let web3 = Web3::new(http);
-
 	let key = SecretKey::from_str(&tx_request.secret_key.unwrap()).unwrap();
-	let signed = web3.accounts().sign_transaction(parameters, &key).await?;
-	web3.eth().send_raw_transaction(signed.raw_transaction).await
+	let signed = WEB3.accounts().sign_transaction(parameters, &key).await?;
+	WEB3.eth().send_raw_transaction(signed.raw_transaction).await
 }

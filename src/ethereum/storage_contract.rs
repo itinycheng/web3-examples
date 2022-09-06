@@ -4,12 +4,10 @@ use log::info;
 use serde::{Deserialize, Serialize};
 use web3::{
 	contract::{Contract, Options},
-	transports::Http,
 	types::{H160, H256},
-	Web3,
 };
 
-use super::WEB3_URL;
+use crate::ethereum::WEB3;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct ContractRequest<T> {
@@ -20,11 +18,9 @@ pub struct ContractRequest<T> {
 
 pub(crate) async fn deploy_value_storage(account: String) -> Result<H160, web3::contract::Error> {
 	let account = H160::from_str(&account).map_err(|_| web3::Error::Decoder(account))?;
-	let http = Http::new(WEB3_URL)?;
-	let web3 = Web3::new(http);
 
 	let address =
-		Contract::deploy(web3.eth(), include_bytes!("../contracts/res/ValueStorage.abi"))?
+		Contract::deploy(WEB3.eth(), include_bytes!("../contracts/res/ValueStorage.abi"))?
 			.confirmations(1)
 			.poll_interval(Duration::from_secs(10))
 			.options(Options::with(|options| options.gas = Some(3_000_000.into())))
@@ -39,15 +35,13 @@ pub(crate) async fn deploy_value_storage(account: String) -> Result<H160, web3::
 pub(crate) async fn store_value(
 	request: ContractRequest<u64>,
 ) -> Result<H256, web3::contract::Error> {
-	let http = Http::new(WEB3_URL)?;
-	let web3 = Web3::new(http);
 	let from_account =
 		H160::from_str(&request.from).map_err(|_| web3::Error::Decoder(request.from))?;
 
 	let address =
 		H160::from_str(&request.address).map_err(|_| web3::Error::Decoder(request.address))?;
 	let contract = Contract::from_json(
-		web3.eth(),
+		WEB3.eth(),
 		address,
 		include_bytes!("../contracts/res/ValueStorage.abi"),
 	)?;
@@ -59,13 +53,10 @@ pub(crate) async fn store_value(
 pub(crate) async fn retrieve_value(
 	request: ContractRequest<()>,
 ) -> Result<u32, web3::contract::Error> {
-	let http = Http::new(WEB3_URL)?;
-	let web3 = Web3::new(http);
-
 	let address =
 		H160::from_str(&request.address).map_err(|_| web3::Error::Decoder(request.address))?;
 	let contract = Contract::from_json(
-		web3.eth(),
+		WEB3.eth(),
 		address,
 		include_bytes!("../contracts/res/ValueStorage.abi"),
 	)?;
