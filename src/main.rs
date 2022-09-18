@@ -6,12 +6,16 @@ use axum::{error_handling::HandleErrorLayer, routing::get, Router};
 use chrono::Local;
 use log::info;
 use routes::eth_routes;
+
 use tower::{BoxError, ServiceBuilder};
 
+use self::ethereum::transaction::TxRequest;
 use tracing_subscriber::{
 	fmt, fmt::time::FormatTime, prelude::__tracing_subscriber_SubscriberExt,
 	util::SubscriberInitExt, EnvFilter, Layer,
 };
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 mod ethereum;
 mod routes;
@@ -27,6 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	info!("Starting up...");
 
 	let app = Router::new()
+		.merge(SwaggerUi::new("/swagger-ui/*tail").url("/api-doc/openapi.json", ApiDoc::openapi()))
 		.route("/", get(|| async { "Hello, World!" }))
 		.nest("/eth", eth_routes())
 		.layer(
@@ -58,3 +63,15 @@ impl FormatTime for LogTimer {
 		write!(w, "{}", Local::now().format("%Y-%m-%d %H:%M:%S%.3f"))
 	}
 }
+
+#[derive(OpenApi)]
+#[openapi(
+	paths(
+		self::routes::eth_api::eth_accounts,
+		self::routes::eth_api::eth_balance,
+		self::routes::eth_api::eth_transaction,
+		self::routes::eth_api::eth_raw_transaction,
+	),
+	components(schemas(TxRequest))
+)]
+struct ApiDoc;

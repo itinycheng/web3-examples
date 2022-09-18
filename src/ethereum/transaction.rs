@@ -3,10 +3,11 @@ use std::str::FromStr;
 use secp256k1::SecretKey;
 use serde::{Deserialize, Serialize};
 use web3::types::{TransactionParameters, TransactionRequest, H256, U256};
+use utoipa::ToSchema;
 
 use super::WEB3;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct TxRequest {
 	from: String,
 	to: String,

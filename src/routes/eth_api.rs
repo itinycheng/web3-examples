@@ -13,6 +13,14 @@ use crate::ethereum::{
 
 use super::ResultInfo;
 
+#[utoipa::path(
+	get,
+	path = "/eth/accounts",
+	responses(
+		(status = 200, description = "List all accounts successfully"),
+		(status = 500, description = "List all accounts failed"),
+	)
+)]
 pub(crate) async fn eth_accounts() -> Json<Value> {
 	let result = match accounts().await {
 		Ok(accounts) => (StatusCode::OK, accounts),
@@ -25,6 +33,17 @@ pub(crate) async fn eth_accounts() -> Json<Value> {
 	build_json_value(result)
 }
 
+#[utoipa::path(
+	get,
+	path = "/eth/balance/{id}",
+	responses(
+		(status = 200, description = "Get account balance successfully"),
+		(status = 500, description = "Get account balance failed"),
+	),
+	params(
+		("id" = String, Path, description = "account id")
+	),
+)]
 pub(crate) async fn eth_balance(Path(id): Path<String>) -> Json<Value> {
 	let result = match account_balance(&id).await {
 		Ok(balance) => (StatusCode::OK, balance),
@@ -37,6 +56,15 @@ pub(crate) async fn eth_balance(Path(id): Path<String>) -> Json<Value> {
 	build_json_value(result)
 }
 
+#[utoipa::path(
+	post,
+	path = "/eth/sendTransaction",
+	request_body = TxRequest,
+	responses(
+		(status = 200, description = "Send transaction successfully"),
+		(status = 500, description = "Send transaction failed")
+	)
+)]
 pub(crate) async fn eth_transaction(Json(payload): Json<TxRequest>) -> Json<Value> {
 	let result = match send_transaction(payload).await {
 		Ok(addr) => (StatusCode::OK, addr),
@@ -49,6 +77,15 @@ pub(crate) async fn eth_transaction(Json(payload): Json<TxRequest>) -> Json<Valu
 	build_json_value(result)
 }
 
+#[utoipa::path(
+	post,
+	path = "/eth/sendRawTransaction",
+	request_body = TxRequest,
+	responses(
+		(status = 200, description = "Send raw transaction successfully"),
+		(status = 500, description = "Send raw transaction failed")
+	)
+)]
 pub(crate) async fn eth_raw_transaction(Json(payload): Json<TxRequest>) -> Json<Value> {
 	let result = match send_raw_transaction(payload).await {
 		Ok(addr) => (StatusCode::OK, addr),
@@ -61,7 +98,7 @@ pub(crate) async fn eth_raw_transaction(Json(payload): Json<TxRequest>) -> Json<
 	build_json_value(result)
 }
 
-pub(crate) async fn deploy_contract_value_storage(Path(account_id): Path<String>) -> Json<Value> {
+pub(crate) async fn deploy_contract(Path(account_id): Path<String>) -> Json<Value> {
 	let result = match deploy_value_storage(account_id).await {
 		Ok(addr) => (StatusCode::OK, addr),
 		Err(err) => {
