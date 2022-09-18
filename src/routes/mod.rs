@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use self::eth_api::{
-	call_retrieve_of_value_storage_contract, call_store_of_value_storage_contract, deploy_contract,
-	eth_accounts, eth_balance, eth_raw_transaction, eth_transaction,
+	call_contract, deploy_contract, eth_accounts, eth_balance, eth_raw_transaction,
+	eth_transaction, query_contract,
 };
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -32,7 +32,7 @@ pub fn eth_routes() -> Router {
 		.route("/balance/:id", get(eth_balance))
 		.route("/sendTransaction", post(eth_transaction))
 		.route("/sendRawTransaction", post(eth_raw_transaction))
-		.route("/contract/deploy", get(deploy_contract))
-		.route("/contract/storage/store", post(call_store_of_value_storage_contract))
-		.route("/contract/storage/retrieve", post(call_retrieve_of_value_storage_contract))
+		.route("/contract/deploy", post(deploy_contract))
+		.route("/contract/call_fn", post(call_contract))
+		.route("/contract/query_fn", post(query_contract))
 }

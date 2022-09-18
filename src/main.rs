@@ -1,3 +1,5 @@
+#![feature(absolute_path)]
+
 use std::time::Duration;
 
 use axum::http::StatusCode;
@@ -9,7 +11,10 @@ use routes::eth_routes;
 
 use tower::{BoxError, ServiceBuilder};
 
-use self::ethereum::transaction::TxRequest;
+use self::ethereum::{
+	contract::{DeployContractRequest, InvokeContractRequest},
+	transaction::TxRequest,
+};
 use tracing_subscriber::{
 	fmt, fmt::time::FormatTime, prelude::__tracing_subscriber_SubscriberExt,
 	util::SubscriberInitExt, EnvFilter, Layer,
@@ -71,7 +76,9 @@ impl FormatTime for LogTimer {
 		self::routes::eth_api::eth_balance,
 		self::routes::eth_api::eth_transaction,
 		self::routes::eth_api::eth_raw_transaction,
+		self::routes::eth_api::deploy_contract,
+		self::routes::eth_api::call_contract,
 	),
-	components(schemas(TxRequest))
+	components(schemas(TxRequest, DeployContractRequest, InvokeContractRequest<String>))
 )]
 struct ApiDoc;

@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use web3::{transports::Http, Web3};
 
 pub(crate) mod account;
-pub(crate) mod storage_contract;
+pub(crate) mod contract;
 pub(crate) mod transaction;
 
 pub(crate) const WEB3_URL: &str = "http://localhost:8545";

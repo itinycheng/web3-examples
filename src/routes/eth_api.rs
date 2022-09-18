@@ -7,7 +7,10 @@ use web3::types::{H160, H256};
 
 use crate::ethereum::{
 	account::{account_balance, accounts},
-	storage_contract::{deploy_value_storage, retrieve_value, store_value, ContractRequest},
+	contract::{
+		call_sol_contract, deploy_sol_contract, query_sol_contract, DeployContractRequest,
+		InvokeContractRequest,
+	},
 	transaction::{send_raw_transaction, send_transaction, TxRequest},
 };
 
@@ -98,11 +101,20 @@ pub(crate) async fn eth_raw_transaction(Json(payload): Json<TxRequest>) -> Json<
 	build_json_value(result)
 }
 
-pub(crate) async fn deploy_contract(Path(account_id): Path<String>) -> Json<Value> {
-	let result = match deploy_value_storage(account_id).await {
+#[utoipa::path(
+	post,
+	path = "/eth/contract/deploy",
+	request_body = DeployContractRequest,
+	responses(
+		(status = 200, description = "Deploy contract successfully"),
+		(status = 500, description = "Deploy contract failed")
+	)
+)]
+pub(crate) async fn deploy_contract(Json(payload): Json<DeployContractRequest>) -> Json<Value> {
+	let result = match deploy_sol_contract(payload).await {
 		Ok(addr) => (StatusCode::OK, addr),
 		Err(err) => {
-			error!(target: "ethereum", "Deploy contract value storage error: {}", err);
+			error!(target: "ethereum", "Deploy contract error: {}", err);
 			(StatusCode::INTERNAL_SERVER_ERROR, H160::zero())
 		}
 	};
@@ -110,13 +122,20 @@ pub(crate) async fn deploy_contract(Path(account_id): Path<String>) -> Json<Valu
 	build_json_value(result)
 }
 
-pub(crate) async fn call_store_of_value_storage_contract(
-	Json(payload): Json<ContractRequest<u64>>,
-) -> Json<Value> {
-	let result = match store_value(payload).await {
+#[utoipa::path(
+	post,
+	path = "/eth/contract/call_fn",
+	request_body = InvokeContractRequest,
+	responses(
+		(status = 200, description = "Call contract function successfully"),
+		(status = 500, description = "Call contract function failed")
+	)
+)]
+pub(crate) async fn call_contract(Json(payload): Json<InvokeContractRequest<u64>>) -> Json<Value> {
+	let result = match call_sol_contract(payload).await {
 		Ok(addr) => (StatusCode::OK, addr),
 		Err(err) => {
-			error!(target: "ethereum", "call store method of contract value storage error: {}", err);
+			error!(target: "ethereum", "call function of contract error: {}", err);
 			(StatusCode::INTERNAL_SERVER_ERROR, H256::zero())
 		}
 	};
@@ -124,13 +143,11 @@ pub(crate) async fn call_store_of_value_storage_contract(
 	build_json_value(result)
 }
 
-pub(crate) async fn call_retrieve_of_value_storage_contract(
-	Json(payload): Json<ContractRequest<()>>,
-) -> Json<Value> {
-	let result = match retrieve_value(payload).await {
+pub(crate) async fn query_contract(Json(payload): Json<InvokeContractRequest<()>>) -> Json<Value> {
+	let result = match query_sol_contract(payload).await {
 		Ok(addr) => (StatusCode::OK, addr),
 		Err(err) => {
-			error!(target: "ethereum", "call retrieve method of contract value storage error: {}", err);
+			error!(target: "ethereum", "query function of contract error: {}", err);
 			(StatusCode::INTERNAL_SERVER_ERROR, 0)
 		}
 	};

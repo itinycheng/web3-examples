@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use secp256k1::SecretKey;
 use serde::{Deserialize, Serialize};
-use web3::types::{TransactionParameters, TransactionRequest, H256, U256};
 use utoipa::ToSchema;
+use web3::types::{TransactionParameters, TransactionRequest, H256, U256};
 
 use super::WEB3;
 
