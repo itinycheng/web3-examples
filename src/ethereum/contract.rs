@@ -11,12 +11,12 @@ use web3::{
 use crate::ethereum::WEB3;
 
 #[derive(Debug, Default, Serialize, Deserialize, ToSchema)]
-pub(crate) struct InvokeContractRequest<T> {
+pub(crate) struct InvokeContractRequest<T = ()> {
 	contract_name: String,
 	contract_address: String,
 	from_account: String,
 	fn_name: String,
-	fn_params: T,
+	fn_params: Option<T>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, ToSchema)]
@@ -62,7 +62,7 @@ pub(crate) async fn call_sol_contract(
 	let contract = Contract::from_json(WEB3.eth(), address, read_file(abi_url)?.as_bytes())?;
 
 	let tx_hash = contract
-		.call(&request.fn_name, request.fn_params, from_account, Options::default())
+		.call(&request.fn_name, request.fn_params.unwrap(), from_account, Options::default())
 		.await?;
 	Ok(tx_hash)
 }
@@ -76,8 +76,7 @@ pub(crate) async fn query_sol_contract(
 
 	let contract = Contract::from_json(WEB3.eth(), address, read_file(abi_url)?.as_bytes())?;
 
-	let value: u32 =
-		contract.query(&request.fn_name, request.fn_params, None, Options::default(), None).await?;
+	let value: u32 = contract.query(&request.fn_name, (), None, Options::default(), None).await?;
 	Ok(value)
 }
 

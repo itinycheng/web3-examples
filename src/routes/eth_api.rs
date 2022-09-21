@@ -143,7 +143,16 @@ pub(crate) async fn call_contract(Json(payload): Json<InvokeContractRequest<u64>
 	build_json_value(result)
 }
 
-pub(crate) async fn query_contract(Json(payload): Json<InvokeContractRequest<()>>) -> Json<Value> {
+#[utoipa::path(
+	post,
+	path = "/eth/contract/query_fn",
+	request_body = InvokeContractRequest<()>,
+	responses(
+		(status = 200, description = "Query contract function successfully"),
+		(status = 500, description = "Query contract function failed")
+	)
+)]
+pub(crate) async fn query_contract(Json(payload): Json<InvokeContractRequest>) -> Json<Value> {
 	let result = match query_sol_contract(payload).await {
 		Ok(addr) => (StatusCode::OK, addr),
 		Err(err) => {

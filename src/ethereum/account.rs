@@ -14,7 +14,7 @@ pub async fn account_balance(account_str: &str) -> Result<String, web3::Error> {
 }
 
 #[inline]
-pub async fn accounts() -> Result<Vec<H160>, web3::Error> {
+pub async fn accounts() -> Result<Vec<H160>, anyhow::Error> {
 	let accounts = WEB3.eth().accounts().await?;
 	Ok(accounts)
 }
