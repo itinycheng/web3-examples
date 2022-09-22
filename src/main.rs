@@ -22,8 +22,11 @@ use tracing_subscriber::{
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+mod error;
 mod ethereum;
 mod routes;
+
+pub type Result<T, E = crate::error::Error> = core::result::Result<T, E>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

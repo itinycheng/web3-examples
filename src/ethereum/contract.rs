@@ -8,7 +8,9 @@ use web3::{
 	types::{H160, H256},
 };
 
-use crate::ethereum::WEB3;
+use crate::error::Error::*;
+
+use crate::{ethereum::WEB3, Result};
 
 #[derive(Debug, Default, Serialize, Deserialize, ToSchema)]
 pub(crate) struct InvokeContractRequest<T = ()> {
@@ -26,11 +28,8 @@ pub(crate) struct DeployContractRequest {
 	confirmations: usize,
 }
 
-pub(crate) async fn deploy_sol_contract(
-	request: DeployContractRequest,
-) -> Result<H160, web3::contract::Error> {
-	let account = H160::from_str(&request.from_account)
-		.map_err(|_| web3::Error::Decoder(request.from_account))?;
+pub(crate) async fn deploy_sol_contract(request: DeployContractRequest) -> Result<H160> {
+	let account = request.from_account.parse().map_err(|_| InvalidParam(request.from_account))?;
 
 	let abi_url = format!("./src/contracts/res/{}.abi", request.contract_name);
 	let bin_url = format!("./src/contracts/res/{}.bin", request.contract_name);
@@ -38,28 +37,29 @@ pub(crate) async fn deploy_sol_contract(
 	let contract_abi = read_file(abi_url)?;
 	let contract_bin = read_file(bin_url)?;
 
-	let address = Contract::deploy(WEB3.eth(), contract_abi.as_bytes())?
+	let address = Contract::deploy(WEB3.eth(), contract_abi.as_bytes())
+		.map_err(|e| AnyError(e.into()))?
 		.confirmations(0)
 		.poll_interval(Duration::from_secs(10))
 		.options(Options::with(|options| options.gas = Some(3_000_000.into())))
 		.execute(contract_bin, (), account)
-		.await?
+		.await
+		.map_err(|e| AnyError(e.into()))?
 		.address();
 
 	info!("Deploy value storage contract, account: {}, addr: {}", account, address);
 	Ok(address)
 }
 
-pub(crate) async fn call_sol_contract(
-	request: InvokeContractRequest<u64>,
-) -> Result<H256, web3::contract::Error> {
-	let from_account = H160::from_str(&request.from_account)
-		.map_err(|_| web3::Error::Decoder(request.from_account))?;
-	let address = H160::from_str(&request.contract_address)
-		.map_err(|_| web3::Error::Decoder(request.contract_address))?;
+pub(crate) async fn call_sol_contract(request: InvokeContractRequest<u64>) -> Result<H256> {
+	let from_account =
+		request.from_account.parse().map_err(|_| InvalidParam(request.from_account))?;
+	let address =
+		request.contract_address.parse().map_err(|_| InvalidParam(request.contract_address))?;
 	let abi_url = format!("./src/contracts/res/{}.abi", request.contract_name);
 
-	let contract = Contract::from_json(WEB3.eth(), address, read_file(abi_url)?.as_bytes())?;
+	let contract = Contract::from_json(WEB3.eth(), address, read_file(abi_url)?.as_bytes())
+		.map_err(|e| Web3ContractError(e.into()))?;
 
 	let tx_hash = contract
 		.call(&request.fn_name, request.fn_params.unwrap(), from_account, Options::default())
@@ -67,15 +67,13 @@ pub(crate) async fn call_sol_contract(
 	Ok(tx_hash)
 }
 
-pub(crate) async fn query_sol_contract(
-	request: InvokeContractRequest<()>,
-) -> Result<u32, web3::contract::Error> {
+pub(crate) async fn query_sol_contract(request: InvokeContractRequest<()>) -> Result<u32> {
 	let address = H160::from_str(&request.contract_address)
 		.map_err(|_| web3::Error::Decoder(request.contract_address))?;
 	let abi_url = format!("./src/contracts/res/{}.abi", request.contract_name);
 
-	let contract = Contract::from_json(WEB3.eth(), address, read_file(abi_url)?.as_bytes())?;
-
+	let contract = Contract::from_json(WEB3.eth(), address, read_file(abi_url)?.as_bytes())
+		.map_err(|e| Web3ContractError(e.into()))?;
 	let value: u32 = contract.query(&request.fn_name, (), None, Options::default(), None).await?;
 	Ok(value)
 }
