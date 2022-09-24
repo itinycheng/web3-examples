@@ -45,7 +45,7 @@ contract Auction {
     }
 
     function withdraw() external returns (bool) {
-        assert(msg.sender != highestBidder);
+        require(msg.sender != highestBidder, "highest bidder");
 
         if (block.timestamp <= endTime) {
             revert AuctionNotEnd();
