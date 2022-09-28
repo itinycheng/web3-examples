@@ -22,6 +22,7 @@ use tracing_subscriber::{
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+mod contracts;
 mod error;
 mod ethereum;
 mod routes;

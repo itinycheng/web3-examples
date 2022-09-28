@@ -8,7 +8,9 @@ use web3::{
 	types::{H160, H256},
 };
 
-use crate::error::Error::*;
+use serde_json::Value as JsonValue;
+
+use crate::{contracts::ABI, error::Error::*};
 
 use crate::{ethereum::WEB3, Result};
 
@@ -28,6 +30,7 @@ pub(crate) struct InvokeContractRequest<T = ()> {
 pub(crate) struct DeployContractRequest {
 	from_account: String,
 	contract_name: String,
+	contract_params: JsonValue,
 	confirmations: usize,
 }
 
@@ -39,13 +42,15 @@ pub(crate) async fn deploy_sol_contract(request: DeployContractRequest) -> Resul
 
 	let contract_abi = read_file(abi_url)?;
 	let contract_bin = read_file(bin_url)?;
+	let constructor = contract_abi.parse::<ABI>()?.constructor;
+	let params = constructor.to_params(request.contract_params)?;
 
 	let address = Contract::deploy(WEB3.eth(), contract_abi.as_bytes())
 		.map_err(|e| AnyError(e.into()))?
 		.confirmations(request.confirmations)
 		.poll_interval(Duration::from_secs(10))
 		.options(Options::with(|options| options.gas = Some(3_000_000.into())))
-		.execute(contract_bin, (), account)
+		.execute(contract_bin, params.as_slice(), account)
 		.await
 		.map_err(|e| AnyError(e.into()))?
 		.address();

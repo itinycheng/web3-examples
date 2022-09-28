@@ -8,14 +8,13 @@ pragma solidity >=0.7.0 <0.9.0;
  * @custom:dev-run-script ./scripts/deploy_with_ethers.ts
  */
 contract ValueStorage {
-
-    uint64 number;
+    int64 number;
 
     /**
      * @dev Store value in variable
      * @param num value to store
      */
-    function store(uint64 num) public {
+    function store(int64 num) public {
         number = num;
     }
 
@@ -23,7 +22,7 @@ contract ValueStorage {
      * @dev Return value
      * @return value of 'number'
      */
-    function retrieve() public view returns (uint64){
+    function retrieve() public view returns (int64) {
         return number;
     }
 }

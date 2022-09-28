@@ -10,6 +10,9 @@ pub enum Error {
 	#[error("call web3 api error: {0:?}")]
 	Web3ContractError(#[from] web3::contract::Error),
 
+	#[error("abi json is invalid, {0}")]
+	ABIParseError(String),
+
 	#[error("input parameter is invalid, {0}")]
 	InvalidParam(String),
 
