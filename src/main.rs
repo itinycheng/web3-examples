@@ -84,6 +84,6 @@ impl FormatTime for LogTimer {
 		self::routes::eth_api::call_contract,
 		self::routes::eth_api::query_contract,
 	),
-	components(schemas(TxRequest, DeployContractRequest, InvokeContractRequest<String>))
+	components(schemas(TxRequest, DeployContractRequest, InvokeContractRequest))
 )]
 struct ApiDoc;

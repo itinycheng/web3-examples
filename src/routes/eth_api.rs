@@ -131,7 +131,7 @@ pub(crate) async fn deploy_contract(Json(payload): Json<DeployContractRequest>) 
 		(status = 500, description = "Call contract function failed")
 	)
 )]
-pub(crate) async fn call_contract(Json(payload): Json<InvokeContractRequest<u64>>) -> Json<Value> {
+pub(crate) async fn call_contract(Json(payload): Json<InvokeContractRequest>) -> Json<Value> {
 	let result = match call_sol_contract(payload).await {
 		Ok(addr) => (StatusCode::OK, addr),
 		Err(err) => {
@@ -157,7 +157,7 @@ pub(crate) async fn query_contract(Json(payload): Json<InvokeContractRequest>) -
 		Ok(addr) => (StatusCode::OK, addr),
 		Err(err) => {
 			error!(target: "ethereum", "query function of contract error: {}", err);
-			(StatusCode::INTERNAL_SERVER_ERROR, 0)
+			(StatusCode::INTERNAL_SERVER_ERROR, vec![])
 		}
 	};
 

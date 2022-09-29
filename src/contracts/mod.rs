@@ -13,7 +13,7 @@ use crate::{error::Error, Result};
 #[derive(Debug, Deserialize)]
 pub struct ABI {
 	pub constructor: ABIUnit,
-	pub function: HashMap<String, ABIUnit>,
+	pub function_map: HashMap<String, ABIUnit>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -126,6 +126,7 @@ impl ABIUnit {
 				.parse::<U256>()
 				.map(|token| token.into_token())
 				.map_err(|e| Error::AnyError(e.into())),
+			v_type if v_type.starts_with("bytes") => Ok(token_str.as_bytes().to_vec().into_token()),
 			_ => Err(Error::InvalidParam(format!(
 				"convert {} to type: {} failed",
 				token_str, variable.r#type
@@ -142,7 +143,7 @@ impl FromStr for ABI {
 			.map_err(|e| Self::Err::ABIParseError(e.to_string()))?;
 
 		let mut type_map = unit_list.into_iter().fold(HashMap::new(), |mut map, unit| {
-			map.entry(unit.r#type).or_insert_with(|| vec![unit]);
+			map.entry(unit.r#type).or_insert_with(|| vec![]).push(unit);
 			map
 		});
 		let constructor = type_map
@@ -157,7 +158,7 @@ impl FromStr for ABI {
 				.collect::<HashMap<String, ABIUnit>>()
 		});
 
-		let abi = ABI { constructor: constructor, function: functions };
+		let abi = ABI { constructor: constructor, function_map: functions };
 		Ok(abi)
 	}
 }
