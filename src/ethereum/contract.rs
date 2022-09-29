@@ -46,7 +46,11 @@ pub(crate) async fn deploy_sol_contract(request: DeployContractRequest) -> Resul
 	let contract_abi = read_file(abi_url)?;
 	let contract_bin = read_file(bin_url)?;
 	let constructor = contract_abi.parse::<ABI>()?.constructor;
-	let params = constructor.to_params(request.contract_params)?;
+	let params = if constructor.is_some() {
+		constructor.unwrap().to_params(request.contract_params)?
+	} else {
+		vec![]
+	};
 
 	let address = Contract::deploy(WEB3.eth(), contract_abi.as_bytes())
 		.map_err(|e| AnyError(e.into()))?

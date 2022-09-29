@@ -12,7 +12,7 @@ use crate::{error::Error, Result};
 
 #[derive(Debug, Deserialize)]
 pub struct ABI {
-	pub constructor: ABIUnit,
+	pub constructor: Option<ABIUnit>,
 	pub function_map: HashMap<String, ABIUnit>,
 }
 
@@ -146,10 +146,7 @@ impl FromStr for ABI {
 			map.entry(unit.r#type).or_insert_with(|| vec![]).push(unit);
 			map
 		});
-		let constructor = type_map
-			.remove(&UnitType::CONSTRUCTOR)
-			.map(|mut units| units.remove(0))
-			.ok_or(Self::Err::ABIParseError("constructor not found".to_string()))?;
+		let constructor = type_map.remove(&UnitType::CONSTRUCTOR).map(|mut units| units.remove(0));
 
 		let functions = type_map.remove(&UnitType::FUNCTION).map_or(HashMap::new(), |units| {
 			units
