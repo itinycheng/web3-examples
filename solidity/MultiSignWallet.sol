@@ -21,7 +21,7 @@ contract MultiSignWallet {
         uint256 txId;
         address to;
         uint256 value;
-        bytes data;
+        string data;
         bool executed;
         uint256 numConfirmed;
     }
@@ -49,7 +49,7 @@ contract MultiSignWallet {
         address indexed owner,
         address indexed to,
         uint256 value,
-        bytes data
+        string data
     );
     event ConfirmTransaction(uint256 indexed txId, address indexed owner);
     event RevokeTransaction(uint256 indexed txId, address indexed owner);
@@ -91,12 +91,13 @@ contract MultiSignWallet {
     function submitTransaction(
         address _to,
         uint256 _value,
-        bytes memory _data
+        string memory _data
     ) external isOwner {
         require(address(this).balance >= _value, "balance not enough");
         require(address(0) != _to, "receive address cannot be address(0)");
 
-        uint256 transactionId = ++txCounter;
+        txCounter += 1;
+        uint256 transactionId = txCounter;
         transactions[transactionId] = Transaction({
             txId: transactionId,
             to: _to,

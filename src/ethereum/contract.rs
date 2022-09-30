@@ -24,16 +24,21 @@ const CONTRACT_BIN_FORMAT: &str = "./src/contracts/{}.bin";
 pub(crate) struct InvokeContractRequest {
 	contract_name: String,
 	contract_address: String,
-	from_account: String,
+	from_account: Option<String>,
 	fn_name: String,
+	#[serde(default)]
 	fn_params: JsonValue,
+	#[serde(default)]
+	confirmations: usize,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, ToSchema)]
 pub(crate) struct DeployContractRequest {
 	from_account: String,
 	contract_name: String,
+	#[serde(default)]
 	contract_params: JsonValue,
+	#[serde(default)]
 	confirmations: usize,
 }
 
@@ -47,7 +52,7 @@ pub(crate) async fn deploy_sol_contract(request: DeployContractRequest) -> Resul
 	let contract_bin = read_file(bin_url)?;
 	let constructor = contract_abi.parse::<ABI>()?.constructor;
 	let params = if constructor.is_some() {
-		constructor.unwrap().to_params(request.contract_params)?
+		constructor.unwrap().to_params(&request.contract_params)?
 	} else {
 		vec![]
 	};
@@ -67,38 +72,56 @@ pub(crate) async fn deploy_sol_contract(request: DeployContractRequest) -> Resul
 }
 
 pub(crate) async fn call_sol_contract(request: InvokeContractRequest) -> Result<H256> {
-	let from_account =
-		request.from_account.parse().map_err(|_| InvalidParam(request.from_account))?;
-	let address =
-		request.contract_address.parse().map_err(|_| InvalidParam(request.contract_address))?;
 	let abi_url = CONTRACT_ABI_FORMAT.replace("{}", &request.contract_name);
 	let contract_abi = read_file(abi_url)?;
+	let params = parse_params(&contract_abi, &request)?;
 
-	let contract = Contract::from_json(WEB3.eth(), address, contract_abi.as_bytes())
-		.map_err(|e| Web3ContractError(e.into()))?;
+	let address =
+		request.contract_address.parse().map_err(|_| InvalidParam(request.contract_address))?;
+	let from_account = request
+		.from_account
+		.as_ref()
+		.unwrap()
+		.parse()
+		.map_err(|_| InvalidParam(request.from_account.unwrap()))?;
 
-	let abi = contract_abi.parse::<ABI>()?;
-	let params = abi
-		.function_map
-		.get(&request.fn_name)
-		.ok_or(Error::InvalidParam("function not found in abi".to_string()))?
-		.to_params(request.fn_params)?;
-
-	let tx_hash = contract
-		.call(&request.fn_name, params.as_slice(), from_account, Options::default())
+	let receipt = Contract::from_json(WEB3.eth(), address, contract_abi.as_bytes())
+		.map_err(|e| Web3ContractError(e.into()))?
+		.call_with_confirmations(
+			&request.fn_name,
+			params.as_slice(),
+			from_account,
+			Options::default(),
+			request.confirmations,
+		)
 		.await?;
-	Ok(tx_hash)
+	Ok(receipt.transaction_hash)
 }
 
 pub(crate) async fn query_sol_contract(request: InvokeContractRequest) -> Result<Vec<String>> {
+	let abi_url = CONTRACT_ABI_FORMAT.replace("{}", &request.contract_name);
+	let contract_abi = read_file(abi_url)?;
+	let params = parse_params(&contract_abi, &request)?;
+
 	let address = H160::from_str(&request.contract_address)
 		.map_err(|_| web3::Error::Decoder(request.contract_address))?;
-	let abi_url = CONTRACT_ABI_FORMAT.replace("{}", &request.contract_name);
+	let from = if request.from_account.is_some() {
+		Some(
+			request
+				.from_account
+				.as_ref()
+				.unwrap()
+				.parse::<H160>()
+				.map_err(|_| web3::Error::Decoder(request.from_account.unwrap()))?,
+		)
+	} else {
+		None
+	};
 
-	let contract = Contract::from_json(WEB3.eth(), address, read_file(abi_url)?.as_bytes())
-		.map_err(|e| Web3ContractError(e.into()))?;
-	let tokens: Vec<Token> =
-		contract.query(&request.fn_name, (), None, Options::default(), None).await?;
+	let tokens: Vec<Token> = Contract::from_json(WEB3.eth(), address, contract_abi.as_bytes())
+		.map_err(|e| Web3ContractError(e.into()))?
+		.query(&request.fn_name, params.as_slice(), from, Options::default(), None)
+		.await?;
 	let results = tokens.iter().map(|token| format!("{:?}", token)).collect();
 	Ok(results)
 }
@@ -111,4 +134,14 @@ fn read_file(path: String) -> Result<String, anyhow::Error> {
 	let mut buf = String::new();
 	let _ = file.read_to_string(&mut buf);
 	Ok(buf)
+}
+
+fn parse_params(contract_abi: &String, request: &InvokeContractRequest) -> Result<Vec<Token>> {
+	let abi = contract_abi.parse::<ABI>()?;
+	let tokens = abi
+		.function_map
+		.get(&request.fn_name)
+		.ok_or(Error::InvalidParam("function not found in abi".to_string()))?
+		.to_params(&request.fn_params)?;
+	Ok(tokens)
 }

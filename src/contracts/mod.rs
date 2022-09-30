@@ -47,12 +47,12 @@ pub enum UnitType {
 }
 
 impl ABIUnit {
-	pub fn to_params(&self, json: JsonValue) -> Result<Vec<Token>> {
+	pub fn to_params(&self, json: &JsonValue) -> Result<Vec<Token>> {
 		if self.inputs.is_none() {
 			return Ok(vec![]);
 		}
 
-		let json_len = match &json {
+		let json_len = match json {
 			JsonValue::Array(arr) => arr.len(),
 			JsonValue::Object(map) => map.len(),
 			JsonValue::Null => 0,
@@ -68,7 +68,7 @@ impl ABIUnit {
 
 		let mut params = Vec::with_capacity(json_len);
 		for (idx, variable) in self.inputs.as_ref().unwrap().iter().enumerate() {
-			match &json {
+			match json {
 				JsonValue::Null => params.push(().into_tokens().into_token()),
 				JsonValue::Bool(b) => params.push(b.into_token()),
 				JsonValue::Number(num) => params.push(Self::num_to_token(num)?),
@@ -122,8 +122,7 @@ impl ABIUnit {
 				.parse::<H160>()
 				.map(|token| token.into_token())
 				.map_err(|e| Error::AnyError(e.into())),
-			v_type if v_type.starts_with("uint256") => token_str
-				.parse::<U256>()
+			v_type if v_type.starts_with("uint256") => U256::from_dec_str(token_str)
 				.map(|token| token.into_token())
 				.map_err(|e| Error::AnyError(e.into())),
 			v_type if v_type.starts_with("bytes") => Ok(token_str.as_bytes().to_vec().into_token()),
@@ -162,6 +161,8 @@ impl FromStr for ABI {
 
 #[cfg(test)]
 mod tests {
+	use web3::types::U256;
+
 	use crate::contracts::ABI;
 
 	#[test]
@@ -169,5 +170,12 @@ mod tests {
 		let s = r#"[ {  "inputs": [{ "internalType": "address[]", "name": "_owners", "type": "address[]"},{ "internalType": "uint256", "name": "_numConfirmRequired", "type": "uint256"},{ "internalType": "bool", "name": "_anyDepositAllowed", "type": "bool"}  ],  "stateMutability": "nonpayable",  "type": "constructor" }]"#;
 		let abi = s.parse::<ABI>();
 		print!("{:?}", abi.unwrap());
+	}
+
+	#[test]
+	fn test_u256() {
+		let amount = U256::from_dec_str("14000000000000000040").unwrap();
+		println!("{}", amount.checked_div(U256::exp10(18)).unwrap().as_u128());
+		println!("{}", u128::MAX);
 	}
 }
