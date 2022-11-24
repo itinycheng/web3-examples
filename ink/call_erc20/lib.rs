@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use scale::{Encode, Decode};
+use scale::{Decode, Encode};
 
 #[derive(Debug, PartialEq, Eq, Encode, Decode)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
@@ -48,7 +48,12 @@ mod call_erc20 {
 		}
 
 		#[ink(message, payable)]
-		pub fn transfer_from(&self, from: AccountId, to: AccountId, value: Balance) -> Result<bool> {
+		pub fn transfer_from(
+			&self,
+			from: AccountId,
+			to: AccountId,
+			value: Balance,
+		) -> Result<bool> {
 			build_call::<<Self as ::ink::reflect::ContractEnv>::Env>()
 				.call_type(Call::new().callee(self.callee))
 				.gas_limit(0)
